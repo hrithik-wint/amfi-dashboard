@@ -6,16 +6,16 @@ import { ChevronDown, Check, LayoutList } from 'lucide-react'
 import SortableTable from '../components/SortableTable'
 import { monthKeyToLabel, sortedMonthKeys } from '../utils/store'
 import { CHART_PALETTE } from '../utils/colors'
-import { formatShort, formatShortTick } from '../utils/csvParser'
+import { formatShort, formatFolios, formatShortTick } from '../utils/csvParser'
 
 const METRICS = [
-  { key: 'netAUM',    label: 'Net AUM',             currency: true  },
-  { key: 'inflow',    label: 'Total Invested',       currency: true  },
-  { key: 'outflow',   label: 'Redemption',           currency: true  },
-  { key: 'netInflow', label: 'Net Inflow / Outflow', currency: true  },
-  { key: 'folios',    label: 'No. of Folios',        currency: false },
-  { key: 'avgAUM',    label: 'Avg AUM',              currency: true  },
-  { key: 'schemes',   label: 'No. of Schemes',       currency: false },
+  { key: 'netAUM',    label: 'Net AUM',             currency: true,  folios: false },
+  { key: 'inflow',    label: 'Total Invested',       currency: true,  folios: false },
+  { key: 'outflow',   label: 'Redemption',           currency: true,  folios: false },
+  { key: 'netInflow', label: 'Net Inflow / Outflow', currency: true,  folios: false },
+  { key: 'folios',    label: 'No. of Folios',        currency: false, folios: true  },
+  { key: 'avgAUM',    label: 'Avg AUM',              currency: true,  folios: false },
+  { key: 'schemes',   label: 'No. of Schemes',       currency: false, folios: false },
 ]
 
 // Sentinel value for "show category total"
@@ -110,7 +110,7 @@ function FundSelector({ allFunds, selected, onChange, colorMap, category }) {
   )
 }
 
-const CustomTooltip = ({ active, payload, label }) => {
+const CustomTooltip = ({ active, payload, label, formatValue }) => {
   if (!active || !payload?.length) return null
   return (
     <div className="bg-white border border-slate-200 rounded-xl p-3 text-sm shadow-xl max-w-xs">
@@ -122,7 +122,7 @@ const CustomTooltip = ({ active, payload, label }) => {
             {p.name === ALL_FUNDS ? 'Category Total' : p.name}
           </span>
           <span className="font-semibold text-slate-900 text-xs">
-            {formatShort(p.value, false)}
+            {formatValue(p.value)}
           </span>
         </div>
       ))}
@@ -210,22 +210,26 @@ export default function CategoryView({
     )
   }
 
+  const formatValue = metric.folios
+    ? formatFolios
+    : (v) => formatShort(v, metric.currency)
+
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-5 sm:space-y-6">
       {/* Header + controls */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <h1 className="text-slate-900 text-xl font-semibold">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <h1 className="text-slate-900 text-lg sm:text-xl font-semibold">
           {categoryLabel(category)} Funds
-          <span className="text-slate-400 font-normal text-base ml-2">
+          <span className="text-slate-400 font-normal text-sm sm:text-base ml-2">
             — {monthKeyToLabel(selectedMonth)}
           </span>
         </h1>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <span className="text-xs text-slate-500 font-medium">Show:</span>
           <select
             value={selectedMetric}
             onChange={e => setSelectedMetric(e.target.value)}
-            className="text-sm bg-white border border-slate-200 hover:border-sky-400 rounded-lg px-3 py-2 text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-200 transition-colors"
+            className="text-xs sm:text-sm bg-white border border-slate-200 hover:border-sky-400 rounded-lg px-2 sm:px-3 py-2 text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-200 transition-colors"
           >
             {METRICS.map(m => <option key={m.key} value={m.key}>{m.label}</option>)}
           </select>
@@ -240,7 +244,7 @@ export default function CategoryView({
       </div>
 
       {/* Hero trend chart */}
-      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+      <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-5 shadow-sm">
         <p className="text-slate-500 text-xs uppercase tracking-wider mb-4">
           {metric.label} — Monthly Trend
           {metric.currency && <span className="ml-1 normal-case text-slate-400">(₹ Crore)</span>}
@@ -250,12 +254,12 @@ export default function CategoryView({
             Select at least one fund to view the trend
           </div>
         ) : (
-          <ResponsiveContainer width="100%" height={320}>
-            <LineChart data={chartData} margin={{ top: 8, right: 24, bottom: 4, left: 10 }}>
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={chartData} margin={{ top: 8, right: 16, bottom: 4, left: 10 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
               <XAxis
                 dataKey="month"
-                tick={{ fill: '#94a3b8', fontSize: 12 }}
+                tick={{ fill: '#94a3b8', fontSize: 11 }}
                 axisLine={false}
                 tickLine={false}
                 padding={{ left: 20, right: 20 }}
@@ -268,7 +272,7 @@ export default function CategoryView({
                 tickFormatter={formatShortTick}
                 width={48}
               />
-              <Tooltip content={<CustomTooltip />} />
+              <Tooltip content={<CustomTooltip formatValue={formatValue} />} />
               <Legend
                 wrapperStyle={{ fontSize: 11, paddingTop: 12 }}
                 formatter={(value) => {

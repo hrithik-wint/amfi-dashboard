@@ -2,7 +2,7 @@ import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tool
 import StatCard from '../components/StatCard'
 import { monthKeyToLabel, sortedMonthKeys } from '../utils/store'
 import { CHART_PALETTE } from '../utils/colors'
-import { formatShort, formatShortTick } from '../utils/csvParser'
+import { formatShort, formatFolios, formatShortTick } from '../utils/csvParser'
 
 function getMonthSummary(data) {
   const gt = data?.grandTotal
@@ -27,14 +27,14 @@ function shortMonth(key) {
 }
 
 const TREND_METRICS = [
-  { key: 'totalAUM',       label: 'Net AUM',             currency: true  },
-  { key: 'totalInflow',    label: 'Total Invested',       currency: true  },
-  { key: 'totalOutflow',   label: 'Redemption',           currency: true  },
-  { key: 'totalNetInflow', label: 'Net Inflow / Outflow', currency: true  },
-  { key: 'totalFolios',    label: 'No. of Folios',        currency: false },
+  { key: 'totalAUM',       label: 'Net AUM',             currency: true,  folios: false },
+  { key: 'totalInflow',    label: 'Total Invested',       currency: true,  folios: false },
+  { key: 'totalOutflow',   label: 'Redemption',           currency: true,  folios: false },
+  { key: 'totalNetInflow', label: 'Net Inflow / Outflow', currency: true,  folios: false },
+  { key: 'totalFolios',    label: 'No. of Folios',        currency: false, folios: true  },
 ]
 
-function TrendChart({ data, metricKey, color, currency }) {
+function TrendChart({ data, metricKey, color, currency, isFolios }) {
   const values = data.map(d => d[metricKey]).filter(v => v != null)
   const minV = Math.min(...values)
   const maxV = Math.max(...values)
@@ -42,7 +42,7 @@ function TrendChart({ data, metricKey, color, currency }) {
 
   return (
     <ResponsiveContainer width="100%" height={130}>
-      <LineChart data={data} margin={{ top: 8, right: 24, bottom: 0, left: 10 }}>
+      <LineChart data={data} margin={{ top: 8, right: 16, bottom: 0, left: 10 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
         <XAxis
           dataKey="month"
@@ -57,7 +57,7 @@ function TrendChart({ data, metricKey, color, currency }) {
           axisLine={false}
           tickLine={false}
           tickFormatter={formatShortTick}
-          width={42}
+          width={44}
         />
         <Tooltip
           content={({ active, payload, label }) =>
@@ -65,7 +65,7 @@ function TrendChart({ data, metricKey, color, currency }) {
               <div className="bg-white border border-slate-200 rounded-lg p-2 text-xs shadow-lg">
                 <p className="text-slate-500 mb-0.5">{label}</p>
                 <p className="text-slate-900 font-semibold">
-                  {formatShort(payload[0].value, currency)}
+                  {isFolios ? formatFolios(payload[0].value) : formatShort(payload[0].value, currency)}
                 </p>
               </div>
             ) : null
@@ -108,13 +108,13 @@ export default function Overview({ allMonths, selectedMonth }) {
   }))
 
   return (
-    <div className="p-6 space-y-6">
-      <h1 className="text-slate-900 text-xl font-semibold">
+    <div className="p-4 sm:p-6 space-y-5 sm:space-y-6">
+      <h1 className="text-slate-900 text-lg sm:text-xl font-semibold">
         Industry Overview — {monthKeyToLabel(selectedMonth)}
       </h1>
 
-      {/* Stat cards */}
-      <div className="grid grid-cols-3 gap-4">
+      {/* Stat cards — 1 col mobile, 3 col desktop */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         <StatCard
           label="Total Industry AUM"
           value={curr.totalAUM}
@@ -132,20 +132,23 @@ export default function Overview({ allMonths, selectedMonth }) {
           label="Total Folios"
           value={curr.totalFolios}
           change={pctChange(curr.totalFolios, prevSummary?.totalFolios)}
+          formatter={formatFolios}
         />
       </div>
 
-      {/* Grand Total Trends — 2 per row */}
+      {/* Grand Total Trends — 1 col mobile, 2 col desktop */}
       <div>
-        <h2 className="text-slate-700 font-semibold text-sm mb-3 uppercase tracking-wider">
+        <h2 className="text-slate-700 font-semibold text-xs sm:text-sm mb-3 uppercase tracking-wider">
           Grand Total Trends
         </h2>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           {TREND_METRICS.map((metric, i) => (
             <div
               key={metric.key}
               className={`bg-white border border-slate-200 rounded-xl p-4 shadow-sm ${
-                i === TREND_METRICS.length - 1 && TREND_METRICS.length % 2 !== 0 ? 'col-span-2' : ''
+                i === TREND_METRICS.length - 1 && TREND_METRICS.length % 2 !== 0
+                  ? 'sm:col-span-2'
+                  : ''
               }`}
             >
               <p className="text-slate-500 text-xs uppercase tracking-wider mb-3">{metric.label}</p>
@@ -155,6 +158,7 @@ export default function Overview({ allMonths, selectedMonth }) {
                   metricKey={metric.key}
                   color={CHART_PALETTE[i]}
                   currency={metric.currency}
+                  isFolios={metric.folios}
                 />
               ) : (
                 <div className="h-[130px] flex items-center justify-center text-slate-400 text-xs">

@@ -43,13 +43,25 @@ export function formatShort(num, currency = false) {
   return sign + pre + abs.toFixed(0) + suf
 }
 
-// Compact tick label for Y-axis (no ₹ / Cr, just the magnitude)
+// Folio-specific format: ≥1Cr → Cr | ≥1L → L | ≥1K → K
+export function formatFolios(num) {
+  if (num === null || num === undefined || isNaN(num)) return '—'
+  const abs = Math.abs(num)
+  const sign = num < 0 ? '-' : ''
+  if (abs >= 10000000) return sign + (abs / 10000000).toFixed(2).replace(/\.?0+$/, '') + 'Cr'
+  if (abs >= 100000)   return sign + (abs / 100000).toFixed(2).replace(/\.?0+$/, '') + 'L'
+  if (abs >= 1000)     return sign + (abs / 1000).toFixed(2).replace(/\.?0+$/, '') + 'K'
+  return sign + abs.toFixed(0)
+}
+
+// Compact tick label for Y-axis — handles Cr for large folio values too
 export function formatShortTick(num) {
   if (num === null || num === undefined || isNaN(num)) return ''
   const abs = Math.abs(num)
   const sign = num < 0 ? '-' : ''
-  if (abs >= 100000) return sign + (abs / 100000).toFixed(1).replace(/\.0$/, '') + 'L'
-  if (abs >= 1000)   return sign + (abs / 1000).toFixed(1).replace(/\.0$/, '') + 'K'
+  if (abs >= 10000000) return sign + (abs / 10000000).toFixed(1).replace(/\.0$/, '') + 'Cr'
+  if (abs >= 100000)   return sign + (abs / 100000).toFixed(1).replace(/\.0$/, '') + 'L'
+  if (abs >= 1000)     return sign + (abs / 1000).toFixed(1).replace(/\.0$/, '') + 'K'
   return sign + abs.toFixed(0)
 }
 

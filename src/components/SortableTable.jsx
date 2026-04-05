@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { ChevronUp, ChevronDown } from 'lucide-react'
-import { formatShort } from '../utils/csvParser'
+import { formatShort, formatFolios } from '../utils/csvParser'
 
 const COLUMNS = [
   { key: 'label',    label: 'Sub-Category',          numeric: false },
@@ -73,6 +73,8 @@ export default function SortableTable({ rows, highlightLabels = [] }) {
                     content = (
                       <span className="text-slate-800">{val}</span>
                     )
+                  } else if (col.key === 'folios') {
+                    content = <span className="text-slate-700">{formatFolios(val)}</span>
                   } else if (!col.currency) {
                     content = <span className="text-slate-700">{formatShort(val)}</span>
                   } else if (col.colored) {
